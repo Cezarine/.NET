@@ -6,18 +6,17 @@ namespace FilmesAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class MovieController
+    public class MovieController : ControllerBase
     {
         private static List<MovieVM> Movies = new List<MovieVM>();
         private static int vID = 0;
 
         [HttpPost]
-        public void CreateMovie([FromBody] MovieVM pMovie)
+        public IActionResult CreateMovie([FromBody] MovieVM pMovie)
         {
             pMovie.ID = vID++;
             Movies.Add(pMovie);
-            Console.WriteLine(pMovie.Title);
-            Console.WriteLine(pMovie.Duration);
+            return CreatedAtAction(nameof(GetMovieFromID), new { id = pMovie.ID }, pMovie); //Esse "id" é referente ao Modelo, então tem que ser igual, ignorando letras maiusculas e minusculas
         }
 
         [HttpGet]
@@ -27,9 +26,13 @@ namespace FilmesAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public MovieVM? GetMovieFromID(int id )
+        public IActionResult GetMovieFromID(int id )
         {
-            return Movies.FirstOrDefault(Movie => Movie.ID == id);
+            var filme =  Movies.FirstOrDefault(Movie => Movie.ID == id);
+            if (filme == null)
+                return NotFound();
+            else
+                return Ok();
         }
 
     }
