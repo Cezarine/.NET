@@ -1,4 +1,7 @@
-﻿using FilmesAPI.Models;
+﻿using AutoMapper;
+using FilmesAPI.Data;
+using FilmesAPI.DTOs;
+using FilmesAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
@@ -8,31 +11,38 @@ namespace FilmesAPI.Controllers
     [Route("[controller]")]
     public class MovieController : ControllerBase
     {
-        private static List<MovieVM> Movies = new List<MovieVM>();
-        private static int vID = 0;
+        private MovieContext _context;
+        private IMapper _mapper;
+
+        public MovieController(MovieContext context, IMapper mapper)
+        {
+            _context = context;
+            _mapper = mapper;
+        }
 
         [HttpPost]
-        public IActionResult CreateMovie([FromBody] MovieVM pMovie)
+        public IActionResult CreateMovie([FromBody] CreateMovieDTO MovieDTO)
         {
-            pMovie.ID = vID++;
-            Movies.Add(pMovie);
-            return CreatedAtAction(nameof(GetMovieFromID), new { id = pMovie.ID }, pMovie); //Esse "id" é referente ao Modelo, então tem que ser igual, ignorando letras maiusculas e minusculas
+            MovieVM movie = _mapper.Map<MovieVM>(MovieDTO);
+            _context.Movies.Add(movie);
+            _context.SaveChanges();
+            return CreatedAtAction(nameof(GetMovieFromID), new { id = movie.ID }, movie); //Esse "id" é referente ao Modelo, então tem que ser igual, ignorando letras maiusculas e minusculas
         }
 
         [HttpGet]
-        public IEnumerable<MovieVM> GetAllMovies()
+        public IEnumerable<MovieVM> GetAllMovies([FromQuery] int skip = 0, [FromQuery] int take = 50)
         {
-            return Movies;
+            return _context.Movies.Skip(skip).Take(take);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetMovieFromID(int id )
         {
-            var filme =  Movies.FirstOrDefault(Movie => Movie.ID == id);
+            var filme = _context.Movies.FirstOrDefault(Movie => Movie.ID == id);
             if (filme == null)
                 return NotFound();
             else
-                return Ok();
+                return Ok(filme);
         }
 
     }
